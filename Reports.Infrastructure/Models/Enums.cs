@@ -32,7 +32,7 @@ namespace Reports.Infrastructure.Models
             GetDataForSUMvalindex3Report,
             GetDataForSUMdeliveryGush8Report,
             GetDataForSUMdeliveryLines8Report,
-            GetDataForR2470outCollectReport,
+            GetDataForR2470outCollectReport,            
             GetDataForCarsInShowroomsReport,
             GetDataForSUMqntIndex1Report,
             GetDataForDTLentries9Report,
@@ -48,7 +48,8 @@ namespace Reports.Infrastructure.Models
             GetDataForAVGStorageDays35Report,
             GetDataForSerialsIn36Report,
             GetDataForSerialsOut37Report,
-            GetDataForDelivery26Report
+            GetDataForDelivery26Report,
+            GetDataForRCollectPlanningReport
         }
 
         public enum ReportID

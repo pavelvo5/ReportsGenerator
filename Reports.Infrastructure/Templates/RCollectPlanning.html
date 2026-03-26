@@ -1,0 +1,175 @@
+﻿<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ריכוז מסירות</title>
+    <style>
+        body {
+            font-family: "Courier New", Courier, monospace;
+            line-height: 1.6;
+            margin: 0;
+            background-color: #fff;
+            direction: rtl;
+        }
+
+        .container {
+            background: #fff;
+            border: none;
+        }
+
+        .header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 15px;
+            text-decoration: underline;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .row {
+            margin-bottom: 10px;
+        }
+
+            .row .label {
+                display: inline;
+            }
+
+            .row .value {
+                font-weight: bold;
+            }
+
+            .row span {
+                display: inline-block;
+                min-width: auto;
+            }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border-spacing: 15px;
+            table-layout: auto;
+            min-width: 100%;
+            max-width: 100%;
+            overflow: auto;
+            page-break-inside: auto;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: right;
+            border-bottom: 1px solid #000;
+            /*white-space: nowrap;*/
+            word-wrap: break-word;
+            overflow: visible;
+            white-space: normal;
+        }
+
+
+
+        th {
+            padding-bottom: 4px;
+            font-weight: normal;
+            vertical-align: bottom;
+        }
+
+        td {
+            font-weight: bold;
+        }
+        thead tr:first-child th {
+            border-top: 1px solid black;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        {{{HeaderHtml}}}
+
+        <div class="header">{{ReportDtl_ReportName}} מספר: {{UnitedMovRef}}</div>
+
+        <div class="row" style="display: flex; width: 100%; box-sizing: border-box; justify-content: space-between; direction: rtl;">
+            <div style="flex: 1 1 50%; min-width: 200px; display: flex;">
+                <span class="value">{{CustomersList_Name}}</span>
+            </div>
+            <div style="flex: 1 1 50%; min-width: 200px; display: flex;">
+                <span class="label">אסמ' לקוח:</span>
+                <span class="value">{{CollectReleaseMaster_CustomerRef}}</span>
+            </div>
+            <div style="flex: 1 1 50%; min-width: 200px; display: flex;">
+                <span class="label">תאריך:</span>
+                <span class="value">{{Date}}</span>
+            </div>
+        </div>
+       
+
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>שורה</th>
+                        <th>גוש</th>
+                        <th>הצהרה</th>
+                        <th>שורת<br>כניסה</th>
+                        <th>מספר<br>מזהה</th>
+                        <th>אריזה</th>
+                        <th>כמות<br>למסירה</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#EntryLineMoveList}}
+                    <tr>
+                        <td>{{EntryLineMoveList_SerialNumber}}</td>
+                        <td>{{EntryLineMoveList_FormattedGush}}</td>
+                        <td>{{EntryLineMoveList_ConsignmentID}}</td>
+                        <td>{{EntryLineMoveList_LineNum}}</td>
+                        <td>{{EntryLineMoveList_LineID}}</td>
+                        <td>{{EntryLineMoveList_LinePackType}}</td>
+                        <td>{{EntryLineMoveList_FormattedLineQuantityMove}}</td>
+                    </tr>
+                    {{/EntryLineMoveList}}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="5"></td>
+                        <td>סה"כ:</td>
+                        <td>{{SumQuantityMove}}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+
+        <div style="display: flex; flex-direction: column; page-break-inside: avoid; margin-top: 70px;">
+            <span>
+                אני החתום מטה, בעל הטובין או בא כוחו מצהיר בזאת כי קיבלתי את הטובין הרשומים בתעודה זו בכמות, בשלמות, ובמצב תקין ללא נזק.
+            </span>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <div style="flex: 1;">
+                    <div class="row">
+                        <span class="label">נהג:</span> <span class="value">{{CollectReleaseMaster_DriverID}}, {{CollectReleaseMaster_DriverName}}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">רכב:</span> <span class="value">{{CollectReleaseMaster_TruckID}}</span>
+                    </div>
+
+                    <div class="row" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="label">הערות:</span> <span class="value">{{CollectReleaseMaster_Remarks4Delively}}</span>
+                        </div>
+                        <div>
+                            <span class="label">חתימה: ____________________</span>
+                        </div>
+                    </div>                    
+                </div>
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>

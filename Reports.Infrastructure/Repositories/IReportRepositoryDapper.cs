@@ -24,6 +24,7 @@ namespace Reports.Infrastructure.Repositories
         Task<R60ExInReportResponse> GetDataForR60ExInReport(Dictionary<string, object> parameters, Manifest manifest, ReportDtl reportDtl);
         Task<R60splitReportResponse> GetDataForR60splitReport(Dictionary<string, object> parameters, Manifest manifest, ReportDtl reportDtl);
         Task<R2470outCollectReportResponse> GetDataForR2470outCollectReport(Dictionary<string, object> parameters, Manifest manifest, ReportDtl reportDtl);
+        Task<RCollectPlanningReportResponse> GetDataForRCollectPlanningReport(Dictionary<string, object> parameters, Manifest manifest, ReportDtl reportDtl);
         Task<InvRepForCustomsReportResponse> GetDataForInvRepForCustomsReport(Dictionary<string, object> parameters, Manifest manifest, ReportDtl reportDtl);
 
 

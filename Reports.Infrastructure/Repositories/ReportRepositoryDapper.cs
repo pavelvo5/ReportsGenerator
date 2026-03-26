@@ -97,6 +97,13 @@ namespace Reports.Infrastructure.Repositories
                             if (R2470outCollectReportResponse.CollectReleaseMaster == null)
                                 throw new CustomException((int)ErrorMessages.ErrorCodes.NoDataFound, ErrorMessages.Messages[(int)ErrorMessages.ErrorCodes.NoDataFound]);
                             return R2470outCollectReportResponse;
+
+                        case StoredProcedure.GetDataForRCollectPlanningReport:
+                            RCollectPlanningReportResponse RCollectPlanningReportResponse = await GetDataForRCollectPlanningReport(request.Parameters, manifest, reportDtl);
+                            if (RCollectPlanningReportResponse.CollectReleaseMaster == null)
+                                throw new CustomException((int)ErrorMessages.ErrorCodes.NoDataFound, ErrorMessages.Messages[(int)ErrorMessages.ErrorCodes.NoDataFound]);
+                            return RCollectPlanningReportResponse;
+
                         case StoredProcedure.GetDataForInvRepForCustomsReport:
                             InvRepForCustomsReportResponse InvRepForCustomsReportResponse = await GetDataForInvRepForCustomsReport(request.Parameters, manifest, reportDtl);
                             if (InvRepForCustomsReportResponse.Consignment == null)
@@ -564,6 +571,46 @@ namespace Reports.Infrastructure.Repositories
             {
                 logger.WriteLog($"Error to Get Data For R2470outCollect Report: {ex}");
                 throw new CustomException((int)ErrorMessages.ErrorCodes.DBAccessFailure, $"{ ErrorMessages.Messages[(int)ErrorMessages.ErrorCodes.DBAccessFailure] } : {ex.Message}");
+            }
+        }
+
+
+        public async Task<RCollectPlanningReportResponse> GetDataForRCollectPlanningReport(Dictionary<string, object> parameters, Manifest manifest, ReportDtl reportDtl)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(connectionString))
+                {
+                    await connection.OpenAsync();
+
+                    using (var multi = await connection.QueryMultipleAsync(StoredProcedure.GetDataForR2470outCollectReport.ToString(), new DynamicParameters(parameters), commandType: CommandType.StoredProcedure))
+                    {
+                        var response = new RCollectPlanningReportResponse
+                        {
+                            CollectReleaseMaster = await multi.ReadFirstOrDefaultAsync<CollectReleaseMaster>(),
+                            CustomersList = await multi.ReadFirstOrDefaultAsync<CustomersList>(),
+                            EntryLineMoveList = (await multi.ReadAsync<EntryLineMoveView>()).ToList(),
+                            Manifest = manifest,
+                            ReportDtl = reportDtl,
+                            UnitedMovRef = Convert.ToInt32(parameters["UnitedMovRef"])
+                        };
+
+                        if (response.EntryLineMoveList != null)
+                        {
+                            for (int i = 0; i < response.EntryLineMoveList.Count; i++)
+                            {
+                                response.EntryLineMoveList[i].SerialNumber = i + 1;
+                            }
+                        }
+
+                        return response;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.WriteLog($"Error to Get Data For RCollectPlanningRepor Report: {ex}");
+                throw new CustomException((int)ErrorMessages.ErrorCodes.DBAccessFailure, $"{ErrorMessages.Messages[(int)ErrorMessages.ErrorCodes.DBAccessFailure]} : {ex.Message}");
             }
         }
 
