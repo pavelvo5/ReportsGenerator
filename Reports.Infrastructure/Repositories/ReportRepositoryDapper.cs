@@ -583,7 +583,7 @@ namespace Reports.Infrastructure.Repositories
                 {
                     await connection.OpenAsync();
 
-                    using (var multi = await connection.QueryMultipleAsync(StoredProcedure.GetDataForR2470outCollectReport.ToString(), new DynamicParameters(parameters), commandType: CommandType.StoredProcedure))
+                    using (var multi = await connection.QueryMultipleAsync(StoredProcedure.GetDataForRCollectPlanningReport.ToString(), new DynamicParameters(parameters), commandType: CommandType.StoredProcedure))
                     {
                         var response = new RCollectPlanningReportResponse
                         {
@@ -597,10 +597,57 @@ namespace Reports.Infrastructure.Repositories
 
                         if (response.EntryLineMoveList != null)
                         {
-                            for (int i = 0; i < response.EntryLineMoveList.Count; i++)
+                            var result = new List<EntryLineMoveView>();
+
+                            var grouped = response.EntryLineMoveList
+                                .GroupBy(x => x.CatalogID)
+                                .OrderBy(g => g.Key);
+
+                            int serial = 1;
+
+                            foreach (var group in grouped)
                             {
-                                response.EntryLineMoveList[i].SerialNumber = i + 1;
+                                var list = group.ToList();
+
+                                
+                                foreach (var item in list)
+                                {
+                                    item.SerialNumber = serial++;
+                                    item.MissingQuantity = null;
+                                    if(item.ReleaseQuantity < 0)
+                                    {
+                                        item.ReleaseQuantity = 0;
+                                    }
+
+                                    result.Add(item);
+                                }
+
+                                // Summary row
+                                var sumRelease = list
+                                    .Where(x => x.ReleaseQuantity > 0)
+                                    .Sum(x => x.ReleaseQuantity);
+                                var quantity = list.First().Quantity;
+
+                                var summaryRow = new EntryLineMoveView
+                                {
+                                    SerialNumber = null,
+                                    Quantity = null,
+                                    CatalogID = "",
+
+                                    MissingQuantity = ((sumRelease - quantity) >= 0 ? (sumRelease - quantity): 0), 
+                                    ReleaseQuantity = (sumRelease >= 0 ? sumRelease : 0),
+                                    Comment = (sumRelease < quantity) ? "*" : "",
+
+
+                                    FormattedGush = "",
+                                    SumLineQuantityMove = null,
+                                    DeclarationID = null
+                                };
+
+                                result.Add(summaryRow);
                             }
+
+                            response.EntryLineMoveList = result;
                         }
 
                         return response;

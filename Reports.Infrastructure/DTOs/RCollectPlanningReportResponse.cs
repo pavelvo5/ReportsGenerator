@@ -17,7 +17,8 @@ namespace Reports.Infrastructure.DTOs
 
         public List<EntryLineMoveView> EntryLineMoveList { get; set; }
 
-        public string SumQuantityMove => EntryLineMoveList.Sum(item => item.LineQuantityMove)?.ToString("N0") ?? string.Empty;
+        //public string SumQuantityMove => EntryLineMoveList.Sum(item => item.LineQuantityMove)?.ToString("N0") ?? string.Empty;
+        public string SumQuantity => EntryLineMoveList.Sum(item => item.Quantity)?.ToString("N0") ?? string.Empty;
 
         public string Date => DateTime.Now.ToString("dd/MM/yyyy HH:mm");
 

@@ -23,6 +23,14 @@ namespace Reports.Infrastructure.Models
 
         public int? LineQuantityMove { get; set; }
 
+        public int? Quantity { get; set; }
+
+        public int? MissingQuantity { get; set; }
+
+        public int? SumLineQuantityMove { get; set; }
+
+        public int? ReleaseQuantity { get; set; }
+
         public DateTime? LastUpdated { get; set; }
 
         public int? RequestIdOnMove { get; set; }
@@ -49,11 +57,13 @@ namespace Reports.Infrastructure.Models
 
         public int? Expr1 { get; set; }
 
+        public string CatalogID { get; set; }
+
         public string FormattedLineQuantityDeclared => LineQuantityDeclared?.ToString("N0") ?? string.Empty;
 
         public string FormattedLineQuantityMove => LineQuantityMove?.ToString("N0") ?? string.Empty;
 
-        public int SerialNumber { get; set; }
+        public int? SerialNumber { get; set; }
 
         public int? NewBalance { get; set; }
 
@@ -64,7 +74,9 @@ namespace Reports.Infrastructure.Models
         public string FormattedNewBalance => NewBalance?.ToString("N0") ?? string.Empty;
 
         public string FormattedGush { get; set; }
-        
+
+        public string Comment { get; set; }
+
 
 
 

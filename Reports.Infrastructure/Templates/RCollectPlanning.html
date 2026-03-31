@@ -60,7 +60,7 @@
         }
 
         th, td {
-            padding: 12px;
+            padding: 6px;
             text-align: right;
             border-bottom: 1px solid #000;
             /*white-space: nowrap;*/
@@ -91,7 +91,7 @@
 
         {{{HeaderHtml}}}
 
-        <div class="header">{{ReportDtl_ReportName}} מספר: {{UnitedMovRef}}</div>
+        <div class="header">{{ReportDtl_ReportName}} הזמנה: {{UnitedMovRef}}</div>
 
         <div class="row" style="display: flex; width: 100%; box-sizing: border-box; justify-content: space-between; direction: rtl;">
             <div style="flex: 1 1 50%; min-width: 200px; display: flex;">
@@ -113,63 +113,52 @@
                 <thead>
                     <tr>
                         <th>שורה</th>
+                        <th>
+                            מספר<br />
+                            מזהה
+                        </th>
+                        <th>
+                            כמות<br />
+                            נדרשת
+                        </th>
+                        <th>
+                            חסרה<br />
+                            לשחרור
+                        </th>
                         <th>גוש</th>
-                        <th>הצהרה</th>
-                        <th>שורת<br>כניסה</th>
-                        <th>מספר<br>מזהה</th>
-                        <th>אריזה</th>
-                        <th>כמות<br>למסירה</th>
+                        <th>יתרה<br>בגוש</th>
+                        <th>התרה</th>
+                        <th>יתרה<br>לשחרור</th>
+                        <th>למסירה</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{#EntryLineMoveList}}
                     <tr>
                         <td>{{EntryLineMoveList_SerialNumber}}</td>
+                        <td>{{EntryLineMoveList_CatalogID}}</td>
+                        <td>{{EntryLineMoveList_Quantity}}</td>
+                        <td>{{EntryLineMoveList_MissingQuantity}}</td>
                         <td>{{EntryLineMoveList_FormattedGush}}</td>
-                        <td>{{EntryLineMoveList_ConsignmentID}}</td>
-                        <td>{{EntryLineMoveList_LineNum}}</td>
-                        <td>{{EntryLineMoveList_LineID}}</td>
-                        <td>{{EntryLineMoveList_LinePackType}}</td>
-                        <td>{{EntryLineMoveList_FormattedLineQuantityMove}}</td>
+                        <td>{{EntryLineMoveList_SumLineQuantityMove}}</td>
+                        <td>{{EntryLineMoveList_DeclarationID}}</td>
+                        <td>{{EntryLineMoveList_ReleaseQuantity}}</td>
+                        <td>{{EntryLineMoveList_Comment}}</td>
                     </tr>
                     {{/EntryLineMoveList}}
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="5"></td>
-                        <td>סה"כ:</td>
-                        <td>{{SumQuantityMove}}</td>
+                        <td>סה"כ</td>
+                        <td>&nbsp;</td>
+                        <td>{{SumQuantity}}</td> 
+                        <td colspan="6">&nbsp;</td>
                     </tr>
                 </tfoot>
             </table>
         </div>
 
 
-        <div style="display: flex; flex-direction: column; page-break-inside: avoid; margin-top: 70px;">
-            <span>
-                אני החתום מטה, בעל הטובין או בא כוחו מצהיר בזאת כי קיבלתי את הטובין הרשומים בתעודה זו בכמות, בשלמות, ובמצב תקין ללא נזק.
-            </span>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <div style="flex: 1;">
-                    <div class="row">
-                        <span class="label">נהג:</span> <span class="value">{{CollectReleaseMaster_DriverID}}, {{CollectReleaseMaster_DriverName}}</span>
-                    </div>
-                    <div class="row">
-                        <span class="label">רכב:</span> <span class="value">{{CollectReleaseMaster_TruckID}}</span>
-                    </div>
-
-                    <div class="row" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <span class="label">הערות:</span> <span class="value">{{CollectReleaseMaster_Remarks4Delively}}</span>
-                        </div>
-                        <div>
-                            <span class="label">חתימה: ____________________</span>
-                        </div>
-                    </div>                    
-                </div>
-
-            </div>
-        </div>
     </div>
 </body>
 </html>
