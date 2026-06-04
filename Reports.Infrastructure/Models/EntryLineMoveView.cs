@@ -77,9 +77,9 @@ namespace Reports.Infrastructure.Models
 
         public string Comment { get; set; }
 
+        public DateTime? ExpiryDate { get; set; }
 
-
-
+        public string Remarks { get; set; }
 
 
     }

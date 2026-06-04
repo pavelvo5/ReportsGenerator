@@ -25,7 +25,8 @@ namespace Reports.Infrastructure.DTOs
 
         public string SumNewBalanceDelivery => EntryLinesMovesViewCalcList.Sum(item => item.NewBalanceDelivery)?.ToString("N0") ?? string.Empty;
 
-        public string DateOpen => DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+        public string MoveDate { get; set; }
+        public string DateOpen => MoveDate ?? DateTime.Now.ToString("dd/MM/yyyy HH:mm");
 
         public ReportDtl ReportDtl { get; set; }
 

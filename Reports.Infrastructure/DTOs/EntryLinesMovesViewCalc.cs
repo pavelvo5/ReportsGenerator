@@ -40,6 +40,8 @@ namespace Reports.Infrastructure.DTOs
 
         public string FormattedNotArrived => NotArrived?.ToString("N0") ?? string.Empty;
 
+        public DateTime? ExpiryDate { get; set; }
+
 
     }
 }

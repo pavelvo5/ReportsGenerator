@@ -17,7 +17,8 @@ namespace Reports.Infrastructure.DTOs
 
         public List<EntryLinesMovesViewCalc> EntryLinesMovesViewCalcList { get; set; }
 
-        public string DateOpen => DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+        public string DateOpen => MoveDate ?? DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+        public string MoveDate { get; set; }
 
         public int? Balance { get; set; }
 

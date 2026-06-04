@@ -29,6 +29,7 @@
             justify-content: center;
         }
 
+
         .row {
             margin-bottom: 10px;
         }
@@ -75,7 +76,7 @@
             padding-bottom: 4px;
             font-weight: normal;
             vertical-align: bottom;
-        }
+        }   
 
         td {
             font-weight: bold;
@@ -83,6 +84,9 @@
         thead tr:first-child th {
             border-top: 1px solid black;
         }
+/*        tfoot {
+            display: table-footer-group;
+        }*/
 
     </style>
 </head>
@@ -146,15 +150,22 @@
                         <td>{{EntryLineMoveList_Comment}}</td>
                     </tr>
                     {{/EntryLineMoveList}}
+                    <!-- Final total row -->
+                    <tr>
+                        <td>סה"כ</td>
+                        <td>&nbsp;</td>
+                        <td>{{SumQuantity}}</td>
+                        <td colspan="6">&nbsp;</td>
+                    </tr>
                 </tbody>
-                <tfoot>
+                <!--<tfoot>
                     <tr>
                         <td>סה"כ</td>
                         <td>&nbsp;</td>
                         <td>{{SumQuantity}}</td> 
                         <td colspan="6">&nbsp;</td>
                     </tr>
-                </tfoot>
+                </tfoot>-->   
             </table>
         </div>
 

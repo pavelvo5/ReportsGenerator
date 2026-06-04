@@ -123,7 +123,7 @@ namespace Reports.Infrastructure.Models
 
 
 
-
+        public string MoveDate { get; set; }
 
 
 

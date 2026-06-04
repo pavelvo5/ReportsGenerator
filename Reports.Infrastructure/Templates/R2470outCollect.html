@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: "Courier New", Courier, monospace;
-            line-height: 1.6;
+            line-height: 1.2;
             margin: 0;
             background-color: #fff;
             direction: rtl;
@@ -30,7 +30,7 @@
         }
 
         .row {
-            margin-bottom: 10px;
+            margin-bottom: 4px;
         }
 
             .row .label {
@@ -49,8 +49,8 @@
         table {
             border-collapse: collapse;
             width: 100%;
-            margin-top: 20px;
-            margin-bottom: 20px;
+            margin-top: 10px;
+            margin-bottom: 10px;
             border-spacing: 15px;
             table-layout: auto;
             min-width: 100%;
@@ -60,7 +60,9 @@
         }
 
         th, td {
-            padding: 12px;
+            padding: 2px 4px;
+            line-height: 1.1;
+            vertical-align: top;
             text-align: right;
             border-bottom: 1px solid #000;
             /*white-space: nowrap;*/
@@ -103,7 +105,7 @@
             </div>
             <div style="flex: 1 1 50%; min-width: 200px; display: flex;">
                 <span class="label">תאריך:</span>
-                <span class="value">{{Date}}</span>
+                <span class="value">{{MoveDate}}</span>
             </div>
         </div>
        
@@ -114,7 +116,7 @@
                     <tr>
                         <th>שורה</th>
                         <th>גוש</th>
-                        <th>הצהרה</th>
+                        <th>התרה</th>
                         <th>שורת<br>כניסה</th>
                         <th>מספר<br>מזהה</th>
                         <th>אריזה</th>
@@ -126,7 +128,7 @@
                     <tr>
                         <td>{{EntryLineMoveList_SerialNumber}}</td>
                         <td>{{EntryLineMoveList_FormattedGush}}</td>
-                        <td>{{EntryLineMoveList_ConsignmentID}}</td>
+                        <td>{{EntryLineMoveList_DeclarationID}}</td>
                         <td>{{EntryLineMoveList_LineNum}}</td>
                         <td>{{EntryLineMoveList_LineID}}</td>
                         <td>{{EntryLineMoveList_LinePackType}}</td>

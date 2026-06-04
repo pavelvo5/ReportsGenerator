@@ -323,14 +323,17 @@ namespace Reports.Infrastructure.Repositories
                             ConsignmentRelease = await multi.ReadFirstOrDefaultAsync<ConsignmentRelease>(),
                             EntryLinesMovesViewCalcList = (await multi.ReadAsync<EntryLinesMovesViewCalc>()).ToList(),
                             Balance = await multi.ReadFirstOrDefaultAsync<int?>(),
+                            MoveDate = await multi.ReadFirstOrDefaultAsync<string>(),
+                            User = await multi.ReadFirstOrDefaultAsync<string>(),
+                            Remarks = await multi.ReadFirstOrDefaultAsync<string>(),                            
                             GoodList = await multi.ReadFirstOrDefaultAsync<GoodList>(),
                             Manifest = manifest,
                             ReportDtl = reportDtl,
                             VarSequence = Convert.ToInt32(parameters["InvMovRecID"]),
                             Driver = parameters["Driver"].ToString(),
-                            Remarks = parameters["Remarks"].ToString(),
+                            //Remarks = parameters["Remarks"].ToString(),
                             TruckID = parameters["TruckID"].ToString(),
-                            User = user
+
                         };
                         return response;
                     }
@@ -398,6 +401,7 @@ namespace Reports.Infrastructure.Repositories
                         {
                             Consignment = await multi.ReadFirstOrDefaultAsync<Consignment>(),
                             EntryLinesMovesViewCalcList = (await multi.ReadAsync<EntryLinesMovesViewCalc>()).ToList(),
+                            MoveDate = await multi.ReadFirstOrDefaultAsync<string>(),
                             Manifest = manifest,
                             ReportDtl = reportDtl
                         };
@@ -550,6 +554,7 @@ namespace Reports.Infrastructure.Repositories
                             CollectReleaseMaster = await multi.ReadFirstOrDefaultAsync<CollectReleaseMaster>(),
                             CustomersList = await multi.ReadFirstOrDefaultAsync<CustomersList>(),
                             EntryLineMoveList = (await multi.ReadAsync<EntryLineMoveView>()).ToList(),
+                            MoveDate = await multi.ReadFirstOrDefaultAsync<string>(),
                             Manifest = manifest,
                             ReportDtl = reportDtl,
                             UnitedMovRef = Convert.ToInt32(parameters["UnitedMovRef"])
