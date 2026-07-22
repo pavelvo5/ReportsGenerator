@@ -51,6 +51,7 @@ namespace Reports.Infrastructure.ReportGenerator
                 {
                     byte[] excel = GenerateExcel(dataSet, request, reportDtl, manifest);
 
+                    // Legacy printing behavior — unchanged. OutputFormat has no effect here.
                     if (request.IsPrint)
                     {
                         if (request.PrinterName == "PDF")
@@ -59,6 +60,15 @@ namespace Reports.Infrastructure.ReportGenerator
                             return excelToPdf;
                         }
                         PrintExcelDocument(excel, request.PrinterName);
+                        return excel;
+                    }
+
+                    // Not printing (download/email flow): honor an explicit OutputFormat if the
+                    // caller set one. Left null/empty => identical to previous behavior (raw xlsx).
+                    if (!string.IsNullOrWhiteSpace(request.OutputFormat) &&
+                        request.OutputFormat.Equals("PDF", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return ConvertExcelToPdf(excel);
                     }
 
                     return excel;
@@ -292,6 +302,8 @@ namespace Reports.Infrastructure.ReportGenerator
                             return GenerateSerialsReport(dataSet, request, reportDtl, manifest);
                         case Enums.GenerateExcel.GenerateDelivery26Report:
                             return GenerateDelivery26Report(dataSet, request, reportDtl, manifest);
+                        case Enums.GenerateExcel.GenerateReleaseGoods10Report:
+                            return GenerateReleaseGoods10Report(dataSet, request, reportDtl, manifest);
 
                         default:
                             break;
@@ -397,7 +409,13 @@ namespace Reports.Infrastructure.ReportGenerator
 
             worksheet.Style.Font.FontSize = 10;
 
-            worksheet.PageSetup.FitToPages(1, 0);
+            // FitToPages(1, 0): "0" is an Excel-only convention meaning "unlimited pages tall".
+            // LibreOffice (used by ConvertExcelToPdf and PrintExcelDocument for both the PDF
+            // download/email path and physical printing) takes 0 literally and collapses the
+            // whole report onto a single page instead. Use an explicit, generously large value
+            // instead of 0 so width stays capped to 1 page while height is effectively unbounded
+            // for any realistic report size.
+            worksheet.PageSetup.FitToPages(1, 100);
 
             double marginSize = 0.5;
             worksheet.PageSetup.Margins.Left = marginSize;
@@ -658,7 +676,7 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     worksheet.Columns().AdjustToContents();
 
-                    
+
                     using (var stream = new MemoryStream())
                     {
                         workbook.SaveAs(stream);
@@ -813,7 +831,7 @@ namespace Reports.Infrastructure.ReportGenerator
                     worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
                     worksheet.Cell(currentRow, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
 
-                    currentRow += 2;        
+                    currentRow += 2;
 
                     var columnsToSum = new List<string> { "כמות מוצהרת", "טרם התקבל", "יתרה", "כמות משוחררת", "כמות ברשות מוסמכת" };
                     var columnsToCount = new List<string> { "גוש" };
@@ -844,14 +862,14 @@ namespace Reports.Infrastructure.ReportGenerator
                         worksheet.Cell(currentRow, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
                         worksheet.Range(currentRow, 1, currentRow, numberOfColumns).Style.Border.TopBorder = XLBorderStyleValues.Thin;
 
-                        int startCalc = 6;                        
+                        int startCalc = 6;
                         ApplyColumnFormula(worksheet, dataSet.Tables[0], startCalc, currentRow, columnsToSum, "SUM");
                         ApplyColumnFormula(worksheet, dataSet.Tables[0], startCalc, currentRow, columnsToCount, "COUNTA");
                     }
 
                     ApplyNumberFormatToSheet(worksheet);
 
-                    worksheet.Columns().AdjustToContents();                                        
+                    worksheet.Columns().AdjustToContents();
 
                     using (var stream = new MemoryStream())
                     {
@@ -983,20 +1001,20 @@ namespace Reports.Infrastructure.ReportGenerator
                     ApplyColumnFormula(worksheet, dataSet.Tables[0], startCalc, currentRow, columnsToCount, "COUNTA");
 
                     ApplyNumberFormatToSheet(worksheet);
-                    
+
                     worksheet.Columns().AdjustToContents();
 
-                    worksheet.Column(5).Width = 15; 
+                    worksheet.Column(5).Width = 15;
                     worksheet.Column(6).Width = 15;
 
                     foreach (var row in worksheet.Rows())
                     {
-                        
+
                         row.Cell(5).Style.Alignment.WrapText = true;
-                        row.Cell(6).Style.Alignment.WrapText = true;                       
+                        row.Cell(6).Style.Alignment.WrapText = true;
                     }
 
-                    
+
                     using (var stream = new MemoryStream())
                     {
                         workbook.SaveAs(stream);
@@ -1034,7 +1052,7 @@ namespace Reports.Infrastructure.ReportGenerator
                     {
                         string fromDate = request.Parameters["FromDate"]?.ToString();
                         string toDate = request.Parameters["ToDate"]?.ToString();
-                        if (!string.IsNullOrEmpty(fromDate) && !string.IsNullOrEmpty(toDate) 
+                        if (!string.IsNullOrEmpty(fromDate) && !string.IsNullOrEmpty(toDate)
                             && DateTime.TryParseExact(fromDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedFromDate)
                             && DateTime.TryParseExact(toDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedToDate))
                         {
@@ -1078,7 +1096,7 @@ namespace Reports.Infrastructure.ReportGenerator
                     ApplyNumberFormatToSheet(worksheet);
 
                     worksheet.Columns().AdjustToContents();
-                    
+
                     using (var stream = new MemoryStream())
                     {
                         workbook.SaveAs(stream);
@@ -1185,7 +1203,7 @@ namespace Reports.Infrastructure.ReportGenerator
                     ApplyNumberFormatToSheet(worksheet);
 
                     worksheet.Columns().AdjustToContents();
-                                        
+
                     using (var stream = new MemoryStream())
                     {
                         workbook.SaveAs(stream);
@@ -1251,12 +1269,12 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     var table1 = worksheet.Cell(currentRow, 1).InsertTable(dataSet.Tables[0]);
                     ApplyTableStyleBoldHeadings(table1);
-                    
+
                     ApplyNumberFormatToSheet(worksheet);
 
                     worksheet.Columns().AdjustToContents();
                     worksheet.Column(1).Width += 5;
-                    
+
                     using (var stream = new MemoryStream())
                     {
                         workbook.SaveAs(stream);
@@ -1308,7 +1326,7 @@ namespace Reports.Infrastructure.ReportGenerator
                             if (filter.Length > 0) filter.Append(", ");
                             filter.Append($"ללקוח: {billedImporter} ({billedImporterID})");
                         }
-                    }                    
+                    }
 
                     if (request.Parameters.ContainsKey("FromGush") && request.Parameters["FromGush"] != null && request.Parameters.ContainsKey("ToGush") && request.Parameters["ToGush"] != null)
                     {
@@ -1323,7 +1341,7 @@ namespace Reports.Infrastructure.ReportGenerator
                             filter.Append($"מגוש {FormattedFromGush} עד גוש {FormattedToGush}");
                         }
                     }
-                    
+
                     if (request.Parameters.ContainsKey("GushState") && request.Parameters["GushState"] != null)
                     {
                         if (int.TryParse(request.Parameters["GushState"].ToString(), out int gushState))
@@ -1346,7 +1364,7 @@ namespace Reports.Infrastructure.ReportGenerator
                         string fromInv = Convert.ToInt32(request.Parameters["FromInv"]).ToString("N0");
                         string toInv = Convert.ToInt32(request.Parameters["ToInv"]).ToString("N0");
                         if (!string.IsNullOrEmpty(fromInv) && !string.IsNullOrEmpty(toInv))
-                        {                            
+                        {
                             if (filter.Length > 0) filter.Append(", ");
                             filter.Append($"מיתרה {fromInv} עד יתרה {toInv}");
                         }
@@ -1390,7 +1408,7 @@ namespace Reports.Infrastructure.ReportGenerator
                         row.Cell(6).Style.Alignment.WrapText = true;
                         row.Cell(13).Style.Alignment.WrapText = true;
                     }
-                    
+
 
                     using (var stream = new MemoryStream())
                     {
@@ -1539,7 +1557,7 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     worksheet.Columns().AdjustToContents();
 
-                    
+
                     using (var stream = new MemoryStream())
                     {
                         workbook.SaveAs(stream);
@@ -1593,7 +1611,7 @@ namespace Reports.Infrastructure.ReportGenerator
                             filter.Append($"ללקוח: {billedImporter} ({billedImporterID})");
                         }
                     }
-             
+
                     if (request.Parameters.ContainsKey("FromGush") && request.Parameters["FromGush"] != null && request.Parameters.ContainsKey("ToGush") && request.Parameters["ToGush"] != null)
                     {
                         string fromGush = request.Parameters["FromGush"]?.ToString();
@@ -1621,7 +1639,7 @@ namespace Reports.Infrastructure.ReportGenerator
                     worksheet.Cell(currentRow, 1).Value = filter.ToString();
                     worksheet.Range(worksheet.Cell(currentRow, 1), worksheet.Cell(currentRow, numberOfColumns + 3)).Merge();
                     worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
-                    worksheet.Cell(currentRow, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;                   
+                    worksheet.Cell(currentRow, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
 
                     currentRow += 2;
 
@@ -1640,7 +1658,7 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     worksheet.Column(5).Width = 10;
                     worksheet.Column(6).Width = 10;
-                    
+
 
                     using (var stream = new MemoryStream())
                     {
@@ -1767,7 +1785,7 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     ApplyNumberFormatToSheet(worksheet);
 
-                    worksheet.Columns().AdjustToContents();                    
+                    worksheet.Columns().AdjustToContents();
 
                     using (var stream = new MemoryStream())
                     {
@@ -1824,7 +1842,7 @@ namespace Reports.Infrastructure.ReportGenerator
                             filter.Append($"ללקוח: {billedImporter} ({billedImporterID})");
                         }
                     }
-           
+
                     if (request.Parameters.ContainsKey("FromGush") && request.Parameters["FromGush"] != null && request.Parameters.ContainsKey("ToGush") && request.Parameters["ToGush"] != null)
                     {
                         string fromGush = request.Parameters["FromGush"]?.ToString();
@@ -1844,7 +1862,7 @@ namespace Reports.Infrastructure.ReportGenerator
                     worksheet.Range(worksheet.Cell(currentRow, 1), worksheet.Cell(currentRow, numberOfColumns)).Merge();
                     worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
                     worksheet.Cell(currentRow, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
- 
+
                     currentRow += 2;
 
                     var table1 = worksheet.Cell(currentRow, 1).InsertTable(dataSet.Tables[0]);
@@ -1931,7 +1949,7 @@ namespace Reports.Infrastructure.ReportGenerator
                         }
                     }
 
-         
+
                     worksheet.Cell(currentRow, 1).Value = filter.ToString();
                     worksheet.Range(worksheet.Cell(currentRow, 1), worksheet.Cell(currentRow, numberOfColumns)).Merge();
                     worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
@@ -1981,6 +1999,217 @@ namespace Reports.Infrastructure.ReportGenerator
             }
         }
 
+        private byte[] GenerateReleaseGoods10Report(DataSet dataSet, ReportRequest request, ReportDtl reportDtl, Manifest manifest)
+        {
+            try
+            {
+                using (var workbook = new XLWorkbook())
+                {
+                    var worksheet = workbook.Worksheets.Add(reportDtl.ReportID);
+
+                    PrintSettings(worksheet);
+
+                    int currentRow = 1;
+                    int numberOfColumns = dataSet.Tables[0].Columns.Count;
+
+                    AddHeader2(worksheet, request, reportDtl, manifest, currentRow, numberOfColumns);
+
+                    currentRow += 2;
+
+                    // Filter-summary line. Column order/headers for the data itself come entirely
+                    // from the stored procedure's SELECT list (Tables[0]) - nothing here decides
+                    // column layout, only the free-text description of which filters were applied.
+                    StringBuilder filter = new StringBuilder();
+
+                    if (request.Parameters.ContainsKey("ValidityDate") && request.Parameters["ValidityDate"] != null)
+                    {
+                        string validityDate = request.Parameters["ValidityDate"]?.ToString();
+                        if (!string.IsNullOrEmpty(validityDate)
+                            && DateTime.TryParseExact(validityDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedValidityDate))
+                        {
+                            filter.Append($"נכון לתאריך: {parsedValidityDate:dd/MM/yy}");
+                        }
+                    }
+
+                    if (request.Parameters.ContainsKey("BilledImporterID") && request.Parameters["BilledImporterID"] != null)
+                    {
+                        string billedImporterID = request.Parameters["BilledImporterID"]?.ToString();
+                        if (!string.IsNullOrEmpty(billedImporterID))
+                        {
+                            string billedImporter = dataSet.Tables[1].Rows.Count > 0 ? dataSet.Tables[1].Rows[0]["BilledImporter"].ToString() : billedImporterID;
+                            if (filter.Length > 0) filter.Append(", ");
+                            filter.Append($"ללקוח: {billedImporter} ({billedImporterID})");
+                        }
+                    }
+
+                    if (request.Parameters.ContainsKey("FromGush") && request.Parameters["FromGush"] != null && request.Parameters.ContainsKey("ToGush") && request.Parameters["ToGush"] != null)
+                    {
+                        string fromGush = request.Parameters["FromGush"]?.ToString();
+                        string toGush = request.Parameters["ToGush"]?.ToString();
+                        if (!string.IsNullOrEmpty(fromGush) && !string.IsNullOrEmpty(toGush))
+                        {
+                            string formattedFromGush = fromGush.Length > 2 ? $"{fromGush.Substring(0, 2)}/{fromGush.Substring(2)}" : fromGush;
+                            string formattedToGush = toGush.Length > 2 ? $"{toGush.Substring(0, 2)}/{toGush.Substring(2)}" : toGush;
+
+                            if (filter.Length > 0) filter.Append(", ");
+                            filter.Append($"לגושים {formattedFromGush} עד {formattedToGush}");
+                        }
+                    }
+
+                    // "התרת שחרור" label shown whenever either a specific declaration or a date
+                    // range was supplied - per spec note: show the label even without a decleration
+                    // ID, as long as a period was given.
+                    bool hasDeclerationID = request.Parameters.ContainsKey("declerationID") && request.Parameters["declerationID"] != null
+                        && !string.IsNullOrEmpty(request.Parameters["declerationID"]?.ToString());
+                    bool hasDateRange = request.Parameters.ContainsKey("FromDate") && request.Parameters["FromDate"] != null
+                        && request.Parameters.ContainsKey("ToDate") && request.Parameters["ToDate"] != null;
+
+                    if (hasDeclerationID || hasDateRange)
+                    {
+                        if (filter.Length > 0) filter.Append(", ");
+                        filter.Append("התרת שחרור");
+
+                        if (hasDeclerationID)
+                        {
+                            filter.Append($" {request.Parameters["declerationID"]}");
+                        }
+
+                        if (hasDateRange)
+                        {
+                            string fromDate = request.Parameters["FromDate"]?.ToString();
+                            string toDate = request.Parameters["ToDate"]?.ToString();
+                            if (DateTime.TryParseExact(fromDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedFromDate)
+                                && DateTime.TryParseExact(toDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedToDate))
+                            {
+                                filter.Append($" מתאריך {parsedFromDate:dd/MM/yy} עד תאריך {parsedToDate:dd/MM/yy}");
+                            }
+                        }
+                    }
+
+                    worksheet.Cell(currentRow, 1).Value = filter.ToString();
+                    worksheet.Range(worksheet.Cell(currentRow, 1), worksheet.Cell(currentRow, numberOfColumns)).Merge();
+                    worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
+                    worksheet.Cell(currentRow, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+                    currentRow += 2;
+
+                    // Columns whose header text is fixed by the stored procedure - only listed
+                    // here by name so the subtotal/total rows know which cells to sum.
+                    var columnsToSum = new List<string> { "נקלט", "שוחרר", "נמסר", "יתרה משוחררת", "ברשות מוסמכת" };
+                    const string groupColumnName = "גוש";
+                    const string labelColumnName = "שם לקוח";
+
+                    // NOTE (flagged for review): the "received" and "delivered" columns are, per
+                    // spec, a single value per gush / per declaration respectively, repeated on
+                    // every line row of that group (per explicit instruction). A plain SUM() over
+                    // those repeated values would over-count whenever a group has more than one
+                    // line. The "released" and "authority" columns are genuine per-line values
+                    // and sum correctly as-is. To keep the displayed subtotal numerically correct
+                    // while still following "repeat + sum" for the on-screen column, deduping is
+                    // applied for the two repeated columns specifically when building the
+                    // subtotal/total rows below.
+
+                    DataTable source = dataSet.Tables[0];
+                    DataTable output = source.Clone();
+                    output.Columns.Add("IsSummaryRow", typeof(bool));
+
+                    var groups = source.AsEnumerable().GroupBy(r => r[groupColumnName]);
+
+                    foreach (var group in groups)
+                    {
+                        var groupRows = group.ToList();
+
+                        foreach (var row in groupRows)
+                        {
+                            var newRow = output.NewRow();
+                            newRow.ItemArray = row.ItemArray;
+                            newRow["IsSummaryRow"] = false;
+                            output.Rows.Add(newRow);
+                        }
+
+                        var summaryRow = output.NewRow();
+                        summaryRow[labelColumnName] = "סה\"כ התרות";
+
+                        summaryRow["שוחרר"] = groupRows.Sum(r => decimal.TryParse(r["שוחרר"]?.ToString(), out var v) ? v : 0);
+                        summaryRow["ברשות מוסמכת"] = groupRows.Sum(r => decimal.TryParse(r["ברשות מוסמכת"]?.ToString(), out var v) ? v : 0);
+
+                        // Received quantity: constant per gush - take it once rather than summing repeats.
+                        summaryRow["נקלט"] = groupRows
+                            .Select(r => decimal.TryParse(r["נקלט"]?.ToString(), out var v) ? v : 0)
+                            .FirstOrDefault();
+
+                        // Delivered quantity: constant per release (DeclarationID) - dedupe by
+                        // declaration before summing, so a multi-line declaration isn't counted
+                        // once per line.
+                        decimal delivered = groupRows
+                            .GroupBy(r => r["התרת שחרור"]?.ToString())
+                            .Select(g => decimal.TryParse(g.First()["נמסר"]?.ToString(), out var v) ? v : 0)
+                            .Sum();
+                        summaryRow["נמסר"] = delivered;
+
+                        summaryRow["יתרה משוחררת"] = Convert.ToDecimal(summaryRow["שוחרר"]) - delivered;
+
+                        summaryRow["IsSummaryRow"] = true;
+                        output.Rows.Add(summaryRow);
+                    }
+
+                    var totalRow = output.NewRow();
+                    totalRow[labelColumnName] = "סה\"כ";
+
+                    totalRow["שוחרר"] = source.AsEnumerable().Sum(r => decimal.TryParse(r["שוחרר"]?.ToString(), out var v) ? v : 0);
+                    totalRow["ברשות מוסמכת"] = source.AsEnumerable().Sum(r => decimal.TryParse(r["ברשות מוסמכת"]?.ToString(), out var v) ? v : 0);
+
+                    totalRow["נקלט"] = source.AsEnumerable()
+                        .GroupBy(r => r[groupColumnName])
+                        .Select(g => decimal.TryParse(g.First()["נקלט"]?.ToString(), out var v) ? v : 0)
+                        .Sum();
+
+                    decimal totalDelivered = source.AsEnumerable()
+                        .GroupBy(r => r["התרת שחרור"]?.ToString())
+                        .Select(g => decimal.TryParse(g.First()["נמסר"]?.ToString(), out var v) ? v : 0)
+                        .Sum();
+                    totalRow["נמסר"] = totalDelivered;
+
+                    totalRow["יתרה משוחררת"] = Convert.ToDecimal(totalRow["שוחרר"]) - totalDelivered;
+
+                    totalRow["IsSummaryRow"] = true;
+                    output.Rows.Add(totalRow);
+
+                    var tableRange = worksheet.Cell(currentRow, 1).InsertTable(output);
+                    ApplyTableStyleBoldHeadings(tableRange);
+
+                    int summaryColIndex = output.Columns["IsSummaryRow"].Ordinal + 1;
+
+                    foreach (var row in tableRange.Rows())
+                    {
+                        bool.TryParse(row.Cell(summaryColIndex).GetValue<string>(), out bool isSummary);
+                        if (isSummary)
+                        {
+                            row.Style.Font.Bold = true;
+                            row.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+                        }
+                    }
+
+                    worksheet.Column(summaryColIndex).Delete();
+
+                    ApplyNumberFormatToSheet(worksheet);
+
+                    worksheet.Columns().AdjustToContents();
+
+                    using (var stream = new MemoryStream())
+                    {
+                        workbook.SaveAs(stream);
+                        return stream.ToArray();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.WriteLog($"Error to Generate ReleaseGoods10 Report: {ex}");
+                throw new CustomException((int)ErrorMessages.ErrorCodes.GlobalError, ex.Message);
+            }
+        }
+
         private byte[] GenerateCustomerInvCover28Report(DataSet dataSet, ReportRequest request, ReportDtl reportDtl, Manifest manifest)
         {
             try
@@ -2010,7 +2239,7 @@ namespace Reports.Infrastructure.ReportGenerator
                             filter.Append($"ללקוח: {billedImporter} ({billedImporterID})");
                         }
                     }
-              
+
 
                     worksheet.Cell(currentRow, 1).Value = filter.ToString();
                     worksheet.Range(worksheet.Cell(currentRow, 1), worksheet.Cell(currentRow, numberOfColumns + 6)).Merge();
@@ -2029,7 +2258,7 @@ namespace Reports.Infrastructure.ReportGenerator
 
 
                     var rows = table1.DataRange.Rows().ToList();
-                    
+
                     int dateColumnIndex = dataSet.Tables[0].Columns["תוקף כיסוי נפח"].Ordinal + 1;
 
                     string lastDate = null;
@@ -2044,7 +2273,7 @@ namespace Reports.Infrastructure.ReportGenerator
                         if (!string.IsNullOrEmpty(currDate))
                             lastDate = currDate;
                     }
-                                       
+
 
                     ApplyNumberFormatToSheet(worksheet);
 
@@ -2081,7 +2310,7 @@ namespace Reports.Infrastructure.ReportGenerator
                             RemoveColumnsByName(dataSet.Tables[0], columnsToDelete);
                         }
                     }
-                   
+
                     PrintSettings(worksheet);
 
                     int currentRow = 1;
@@ -2112,7 +2341,7 @@ namespace Reports.Infrastructure.ReportGenerator
                     // Converting from Excel width units to pixels – estimate: approximately 7.5 pixels per width unit
                     int widthInPixels = (int)(totalWidthUnits * 7.5);
 
-                    var picture = worksheet.AddPicture(imageStream).MoveTo(worksheet.Cell(1, startColumn)).WithSize(widthInPixels, 70); 
+                    var picture = worksheet.AddPicture(imageStream).MoveTo(worksheet.Cell(1, startColumn)).WithSize(widthInPixels, 70);
 
                     currentRow++;
 
@@ -2143,7 +2372,7 @@ namespace Reports.Infrastructure.ReportGenerator
                         string direction = request.Parameters["direction"]?.ToString();
                         if (!string.IsNullOrEmpty(direction))
                         {
-                            if(direction == "I")
+                            if (direction == "I")
                                 header.Append(" ליבוא");
                             else
                                 header.Append(" ליצוא");
@@ -2346,7 +2575,7 @@ namespace Reports.Infrastructure.ReportGenerator
                     ApplyNumberFormatToSheet(worksheet);
 
                     worksheet.Columns().AdjustToContents();
-                    
+
 
                     using (var stream = new MemoryStream())
                     {
@@ -2413,7 +2642,7 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     worksheet.Columns().AdjustToContents();
 
-                   
+
                     using (var stream = new MemoryStream())
                     {
                         workbook.SaveAs(stream);
@@ -2492,7 +2721,7 @@ namespace Reports.Infrastructure.ReportGenerator
                     ApplyNumberFormatToSheet(worksheet);
 
                     worksheet.Columns().AdjustToContents();
-                    
+
 
                     using (var stream = new MemoryStream())
                     {
@@ -2543,17 +2772,17 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     var columnsToCount = new List<string> { "מס' סריאלי" };
 
-                    if(reportDtl.ReportID == ReportID.SerialsIn36.ToString())
+                    if (reportDtl.ReportID == ReportID.SerialsIn36.ToString())
                         columnsToCount.Add("תאריך כניסה");
 
-                    else if(reportDtl.ReportID == ReportID.SerialsOut37.ToString())
+                    else if (reportDtl.ReportID == ReportID.SerialsOut37.ToString())
                         columnsToCount.Add("תאריך מסירה");
 
                     ApplyColumnFormula(worksheet, dataSet.Tables[0], startCalc, currentRow, columnsToCount, "COUNTA");
 
                     ApplyNumberFormatToSheet(worksheet);
 
-                    worksheet.Columns().AdjustToContents();                   
+                    worksheet.Columns().AdjustToContents();
 
                     using (var stream = new MemoryStream())
                     {
@@ -2633,7 +2862,7 @@ namespace Reports.Infrastructure.ReportGenerator
                         var table1 = worksheet.Cell(currentRow, 1).InsertTable(gushInfo);
                         ApplyTableStyleBoldHeadings(table1);
                         currentRow += gushInfo.Rows.Count + 2;
- 
+
                         var gush = infoRow["גוש"];
                         var detailRows = details.AsEnumerable().Where(r => r["גוש"].Equals(gush));
 
@@ -2670,15 +2899,15 @@ namespace Reports.Infrastructure.ReportGenerator
                         }
                         else
                         {
-                            currentRow++; 
+                            currentRow++;
                         }
                     }
-          
+
 
                     ApplyNumberFormatToSheet(worksheet);
 
                     worksheet.Columns().AdjustToContents();
-                    
+
 
                     using (var stream = new MemoryStream())
                     {

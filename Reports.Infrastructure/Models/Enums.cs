@@ -32,7 +32,7 @@ namespace Reports.Infrastructure.Models
             GetDataForSUMvalindex3Report,
             GetDataForSUMdeliveryGush8Report,
             GetDataForSUMdeliveryLines8Report,
-            GetDataForR2470outCollectReport,            
+            GetDataForR2470outCollectReport,
             GetDataForCarsInShowroomsReport,
             GetDataForSUMqntIndex1Report,
             GetDataForDTLentries9Report,
@@ -80,7 +80,8 @@ namespace Reports.Infrastructure.Models
             GenerateCustomerInvAvg4Report,
             GenerateAVGStorageDays35Report,
             GenerateSerialsReport,
-            GenerateDelivery26Report
+            GenerateDelivery26Report,
+            GenerateReleaseGoods10Report
         }
     }
 }

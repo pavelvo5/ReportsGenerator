@@ -203,11 +203,22 @@ namespace Reports.Infrastructure.Models
 
         public string FormattedFobValueNis => FobValueNis?.ToString("N0") ?? string.Empty;
 
-        public string FormattedGush => Gush.ToString().Length > 2 ? $"{Gush.ToString().Substring(0, 2)}/{Gush.ToString().Substring(2)}": Gush.ToString();
-        
+        public string FormattedGush => Gush.ToString().Length > 2 ? $"{Gush.ToString().Substring(0, 2)}/{Gush.ToString().Substring(2)}" : Gush.ToString();
+
         public string FormattedReleaseDate => ReleaseDate?.ToString("dd/MM/yyyy HH:mm");
 
         public string FormattedReleaseDateShort => ReleaseDate?.ToString("dd/MM/yy");
+
+        // --- Added for R912470 storage-request header/footer note ---
+        // Populated only when the SP returns these columns (e.g. GetDataForR912470Report);
+        // left null/default for every other report using this shared model.
+        public string ReportTitle { get; set; }
+
+        public bool ShowStorageRequestNote { get; set; }
+
+        public string StorageRequestStatusLabel { get; set; }
+
+        public string FormattedMSG70LastSuccessTransmission => MSG70LastSuccessTransmission?.ToString("dd/MM/yyyy HH:mm") ?? string.Empty;
 
 
     }

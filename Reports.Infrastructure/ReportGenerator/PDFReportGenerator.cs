@@ -124,7 +124,7 @@ namespace Reports.Infrastructure.ReportGenerator
 
                 return result;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.WriteLog($"Error to Flatten Object to dictionary: {ex}");
                 throw new CustomException((int)ErrorMessages.ErrorCodes.GlobalError, ex.Message);
@@ -141,7 +141,7 @@ namespace Reports.Infrastructure.ReportGenerator
             try
             {
                 string basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "Templates");
-                
+
                 string template = File.ReadAllText(Path.Combine(basePath, reportDtl.Template));
 
                 var stubble = new StubbleBuilder().Build();
@@ -165,20 +165,20 @@ namespace Reports.Infrastructure.ReportGenerator
                     data["FooterHtml"] = stubble.Render(footerTemplate, data);
                 }
 
-          
+
                 string html = stubble.Render(template, data);
 
                 logger.WriteLog("Generate HTML completed successfully.");
 
                 return html;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.WriteLog($"Error to generate HTML: {ex}");
                 throw new CustomException((int)ErrorMessages.ErrorCodes.GlobalError, ex.Message);
             }
         }
-        private  async Task<byte[]> HtmlToPdfDocument(string htmlContent)
+        private async Task<byte[]> HtmlToPdfDocument(string htmlContent)
         {
             try
             {
@@ -209,7 +209,7 @@ namespace Reports.Infrastructure.ReportGenerator
                 await browser.CloseAsync();
 
                 logger.WriteLog("Generate PDF from HTML completed successfully.");
-                
+
                 return pdfBuffer;
 
             }
@@ -281,7 +281,7 @@ namespace Reports.Infrastructure.ReportGenerator
             catch (Exception ex)
             {
                 logger.WriteLog($"Error to Print PDF Document: {ex}");
-                throw new CustomException((int)ErrorMessages.ErrorCodes.FailedToPrint, $"{ ErrorMessages.Messages[(int)ErrorMessages.ErrorCodes.FailedToPrint] } : {ex.Message}");
+                throw new CustomException((int)ErrorMessages.ErrorCodes.FailedToPrint, $"{ErrorMessages.Messages[(int)ErrorMessages.ErrorCodes.FailedToPrint]} : {ex.Message}");
             }
             finally
             {
@@ -342,6 +342,8 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     if (data != null && data.Any())
                     {
+                        data["RequestingUser"] = clonedRequest.User;
+
                         string html = GenerateHtml(data, reportDtl);
                         htmlBuilder.Append(html);
 
@@ -382,7 +384,10 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     if (data != null && data.Any())
                     {
-                        string htmlContent = GenerateHtml(data, reportDtl); 
+                        // Not a database field - available to any PDF template as {{RequestingUser}}.
+                        data["RequestingUser"] = request.User;
+
+                        string htmlContent = GenerateHtml(data, reportDtl);
                         return htmlContent;
                     }
                     return null;

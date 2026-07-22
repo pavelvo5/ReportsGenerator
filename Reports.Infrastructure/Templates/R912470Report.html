@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>התרת אחסנה</title>
+    <title>{{Consignment_ReportTitle}}</title>
     <style>
         body {
             font-family: "Courier New", Courier, monospace;
             line-height: 1.6;
             margin: 0;
             background-color: #fff;
-            direction: rtl;           
+            direction: rtl;
         }
 
         .container {
@@ -27,7 +27,6 @@
             width: 100%;
             display: flex;
             justify-content: center;
-            
         }
 
         .row {
@@ -53,7 +52,7 @@
             margin-top: 20px;
             margin-bottom: 20px;
             border-spacing: 15px;
-            /*table-layout: auto;*/          
+            /*table-layout: auto;*/
         }
 
         th, td {
@@ -62,21 +61,36 @@
             border-bottom: 1px solid #000;
             white-space: nowrap;
         }
+
             td:last-child {
                 width: 100%;
             }
+
         th {
             padding-bottom: 4px;
             font-weight: normal;
         }
+
         td {
             font-weight: bold;
         }
+
+        .storage-request-note {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #000;
+            text-align: right;
+            font-weight: bold;
+        }
+
+            .storage-request-note div {
+                margin-bottom: 6px;
+            }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">התרת אחסנה</div>
+        <div class="header">{{Consignment_ReportTitle}}</div>
 
         <div class="row">
             <span class="label">התרת אחסנה:</span> <span class="value">{{Consignment_ConsignmentID}}</span>
@@ -173,6 +187,13 @@
         <div class="row">
             <span class="label">מכולה:</span> <span class="value">{{ContainersNumber}}</span>
         </div>
+
+        {{#Consignment_ShowStorageRequestNote}}
+        <div class="storage-request-note">
+            <div>בקשת האחסנה {{Consignment_StorageRequestStatusLabel}} בתאריך {{Consignment_FormattedMSG70LastSuccessTransmission}} על ידי {{RequestingUser}}</div>
+            <div>קורליישן {{Consignment_MSG70ResponseID}}, {{Consignment_MSG70ResponseStat}} {{Consignment_MSG70ResponseErr}}</div>
+        </div>
+        {{/Consignment_ShowStorageRequestNote}}
 
     </div>
 </body>
