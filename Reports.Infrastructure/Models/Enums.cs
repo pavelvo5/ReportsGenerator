@@ -1,4 +1,15 @@
-﻿using System;
+﻿/****************************************************************************************
+ FILE VERSION: 2 (2026-07-23)
+
+ Changelog:
+   v1 (2026-07-19) - Added GenerateReleaseGoods10Report to the GenerateExcel enum.
+   v2 (2026-07-23) - Restored GetDataForRCollectPlanningReport to the StoredProcedure
+                      enum - it was missing from the delivered v1 file (present in the
+                      original project zip, dropped somewhere before delivery), which
+                      caused a compile error for Pavel. He had already patched it back
+                      in locally; this just makes that fix official in the delivered file.
+****************************************************************************************/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

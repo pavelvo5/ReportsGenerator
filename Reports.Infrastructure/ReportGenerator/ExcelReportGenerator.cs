@@ -1,4 +1,38 @@
-﻿using ClosedXML.Excel;
+﻿/****************************************************************************************
+ FILE VERSION: 6 (2026-07-22)
+
+ Changelog (each entry = one delivered version of this file):
+   v1 (2026-07-19) - Added optional OutputFormat field support in ExecuteAsync
+                      (Excel-format reports can return PDF bytes on the download/email
+                      path via IsPrint=false + OutputFormat="PDF").
+   v2 (2026-07-19) - Fixed PrintSettings(): FitToPages(1,0) -> FitToPages(1,100),
+                      correcting multi-page Excel reports collapsing to a single page
+                      under LibreOffice conversion/printing.
+   v3 (2026-07-19) - Added GenerateReleaseGoods10Report (new report), first version:
+                      subtotal/grand-total rows built in C# via LINQ grouping on the
+                      flat DataTable returned by the stored procedure.
+   v4 (2026-07-20) - GenerateReleaseGoods10Report rebuilt: subtotal/total rows are now
+                      built entirely in the stored procedure (RowType/SortCustomer/
+                      SortGush columns), and released-balance calculation corrected to
+                      be per-declaration rather than per-line. C# side simplified to
+                      just read RowType and strip the three helper columns.
+   v5 (2026-07-21) - GenerateReleaseGoods10Report: gush-subtotal row label changed to a
+                      shorter phrase; second summary level changed from an overall grand
+                      total to a per-customer subtotal, replacing it rather than adding
+                      to it; Received/Delivered recomputed at gush+line and line+release
+                      grain respectively (values now come from EntryLinesMoves, not
+                      InventoryMove).
+   v6 (2026-07-22) - GenerateInvBckReport: removed the old ad-hoc 3-column print
+                      removal (now superseded by the stored procedure's own compact/
+                      portrait layout, driven by @IsPrint); added portrait-orientation
+                      override for the same trigger.
+
+ NOTE: the copy Pavel installed (uploaded 2026-07-22 for review) was v3 - three
+ versions behind. If you're comparing a deployed copy against this changelog, check
+ line 2 (FILE VERSION) first before diagnosing any report as a data/logic bug - a
+ stale file will look like a bug but isn't one.
+****************************************************************************************/
+using ClosedXML.Excel;
 using Reports.Infrastructure.DTOs;
 using Reports.Infrastructure.Exceptions;
 using Reports.Infrastructure.Logger;
@@ -701,10 +735,14 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     PrintSettings(worksheet);
 
-                    if (request.IsPrint)
+                    // Compact/portrait layout for printing: column selection, truncation, and
+                    // header text for this mode are now fully owned by the stored procedure
+                    // (GetDataForInvBckReport branches on @IsPrint) - no column list here anymore.
+                    // Orientation is the one thing that has to live in C#, since it's a
+                    // worksheet-level property SQL has no way to express.
+                    if (request.IsPrint) // TODO: may change to request.OutputFormat == "PDF" later - see SP notes
                     {
-                        var columnsToDelete = new List<string> { "תיק סוכן", "כמות מוצהרת", "הערה" };
-                        RemoveColumnsByName(dataSet.Tables[0], columnsToDelete);
+                        worksheet.PageSetup.PageOrientation = XLPageOrientation.Portrait;
                     }
 
                     int currentRow = 1;
@@ -2010,7 +2048,12 @@ namespace Reports.Infrastructure.ReportGenerator
                     PrintSettings(worksheet);
 
                     int currentRow = 1;
-                    int numberOfColumns = dataSet.Tables[0].Columns.Count;
+                    // The stored procedure returns three helper columns beyond the 13 visible
+                    // report columns: RowType (0=detail, 1=gush subtotal, 2=customer subtotal -
+                    // drives which rows get bolded below), and SortCustomer/SortGush (used only
+                    // to force correct row ordering in the ORDER BY - not meaningful on-screen).
+                    // All three are stripped from the sheet before it's finalized.
+                    int numberOfColumns = dataSet.Tables[0].Columns.Count - 3;
 
                     AddHeader2(worksheet, request, reportDtl, manifest, currentRow, numberOfColumns);
 
@@ -2056,7 +2099,7 @@ namespace Reports.Infrastructure.ReportGenerator
                         }
                     }
 
-                    // "התרת שחרור" label shown whenever either a specific declaration or a date
+                    // Release-declaration label shown whenever either a specific declaration or a date
                     // range was supplied - per spec note: show the label even without a decleration
                     // ID, as long as a period was given.
                     bool hasDeclerationID = request.Parameters.ContainsKey("declerationID") && request.Parameters["declerationID"] != null
@@ -2093,104 +2136,36 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     currentRow += 2;
 
-                    // Columns whose header text is fixed by the stored procedure - only listed
-                    // here by name so the subtotal/total rows know which cells to sum.
-                    var columnsToSum = new List<string> { "נקלט", "שוחרר", "נמסר", "יתרה משוחררת", "ברשות מוסמכת" };
-                    const string groupColumnName = "גוש";
-                    const string labelColumnName = "שם לקוח";
+                    // Detail + gush-subtotal + grand-total rows, and their sort order, are all
+                    // already correct as returned by the stored procedure (RowType 0/1/2) - the
+                    // table is inserted as-is, with no grouping/summing logic in C#.
+                    DataTable table = dataSet.Tables[0];
+                    int rowTypeColIndex = table.Columns["RowType"].Ordinal;
 
-                    // NOTE (flagged for review): the "received" and "delivered" columns are, per
-                    // spec, a single value per gush / per declaration respectively, repeated on
-                    // every line row of that group (per explicit instruction). A plain SUM() over
-                    // those repeated values would over-count whenever a group has more than one
-                    // line. The "released" and "authority" columns are genuine per-line values
-                    // and sum correctly as-is. To keep the displayed subtotal numerically correct
-                    // while still following "repeat + sum" for the on-screen column, deduping is
-                    // applied for the two repeated columns specifically when building the
-                    // subtotal/total rows below.
-
-                    DataTable source = dataSet.Tables[0];
-                    DataTable output = source.Clone();
-                    output.Columns.Add("IsSummaryRow", typeof(bool));
-
-                    var groups = source.AsEnumerable().GroupBy(r => r[groupColumnName]);
-
-                    foreach (var group in groups)
-                    {
-                        var groupRows = group.ToList();
-
-                        foreach (var row in groupRows)
-                        {
-                            var newRow = output.NewRow();
-                            newRow.ItemArray = row.ItemArray;
-                            newRow["IsSummaryRow"] = false;
-                            output.Rows.Add(newRow);
-                        }
-
-                        var summaryRow = output.NewRow();
-                        summaryRow[labelColumnName] = "סה\"כ התרות";
-
-                        summaryRow["שוחרר"] = groupRows.Sum(r => decimal.TryParse(r["שוחרר"]?.ToString(), out var v) ? v : 0);
-                        summaryRow["ברשות מוסמכת"] = groupRows.Sum(r => decimal.TryParse(r["ברשות מוסמכת"]?.ToString(), out var v) ? v : 0);
-
-                        // Received quantity: constant per gush - take it once rather than summing repeats.
-                        summaryRow["נקלט"] = groupRows
-                            .Select(r => decimal.TryParse(r["נקלט"]?.ToString(), out var v) ? v : 0)
-                            .FirstOrDefault();
-
-                        // Delivered quantity: constant per release (DeclarationID) - dedupe by
-                        // declaration before summing, so a multi-line declaration isn't counted
-                        // once per line.
-                        decimal delivered = groupRows
-                            .GroupBy(r => r["התרת שחרור"]?.ToString())
-                            .Select(g => decimal.TryParse(g.First()["נמסר"]?.ToString(), out var v) ? v : 0)
-                            .Sum();
-                        summaryRow["נמסר"] = delivered;
-
-                        summaryRow["יתרה משוחררת"] = Convert.ToDecimal(summaryRow["שוחרר"]) - delivered;
-
-                        summaryRow["IsSummaryRow"] = true;
-                        output.Rows.Add(summaryRow);
-                    }
-
-                    var totalRow = output.NewRow();
-                    totalRow[labelColumnName] = "סה\"כ";
-
-                    totalRow["שוחרר"] = source.AsEnumerable().Sum(r => decimal.TryParse(r["שוחרר"]?.ToString(), out var v) ? v : 0);
-                    totalRow["ברשות מוסמכת"] = source.AsEnumerable().Sum(r => decimal.TryParse(r["ברשות מוסמכת"]?.ToString(), out var v) ? v : 0);
-
-                    totalRow["נקלט"] = source.AsEnumerable()
-                        .GroupBy(r => r[groupColumnName])
-                        .Select(g => decimal.TryParse(g.First()["נקלט"]?.ToString(), out var v) ? v : 0)
-                        .Sum();
-
-                    decimal totalDelivered = source.AsEnumerable()
-                        .GroupBy(r => r["התרת שחרור"]?.ToString())
-                        .Select(g => decimal.TryParse(g.First()["נמסר"]?.ToString(), out var v) ? v : 0)
-                        .Sum();
-                    totalRow["נמסר"] = totalDelivered;
-
-                    totalRow["יתרה משוחררת"] = Convert.ToDecimal(totalRow["שוחרר"]) - totalDelivered;
-
-                    totalRow["IsSummaryRow"] = true;
-                    output.Rows.Add(totalRow);
-
-                    var tableRange = worksheet.Cell(currentRow, 1).InsertTable(output);
+                    var tableRange = worksheet.Cell(currentRow, 1).InsertTable(table);
                     ApplyTableStyleBoldHeadings(tableRange);
-
-                    int summaryColIndex = output.Columns["IsSummaryRow"].Ordinal + 1;
 
                     foreach (var row in tableRange.Rows())
                     {
-                        bool.TryParse(row.Cell(summaryColIndex).GetValue<string>(), out bool isSummary);
-                        if (isSummary)
+                        int.TryParse(row.Cell(rowTypeColIndex + 1).GetValue<string>(), out int rowType);
+                        if (rowType > 0)
                         {
                             row.Style.Font.Bold = true;
                             row.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
                         }
                     }
 
-                    worksheet.Column(summaryColIndex).Delete();
+                    // Delete highest-index helper column first so earlier column indices stay valid.
+                    var helperColumnIndexes = new[]
+                    {
+                        table.Columns["RowType"].Ordinal + 1,
+                        table.Columns["SortCustomer"].Ordinal + 1,
+                        table.Columns["SortGush"].Ordinal + 1
+                    };
+                    foreach (var colIndex in helperColumnIndexes.OrderByDescending(i => i))
+                    {
+                        worksheet.Column(colIndex).Delete();
+                    }
 
                     ApplyNumberFormatToSheet(worksheet);
 

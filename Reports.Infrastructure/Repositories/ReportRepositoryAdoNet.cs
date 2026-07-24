@@ -1,4 +1,14 @@
-﻿using Reports.Infrastructure.DTOs;
+﻿/****************************************************************************************
+ FILE VERSION: 1 (2026-07-22)
+
+ Changelog:
+   v1 (2026-07-22) - Added an InvBck case to GetFilteredParameters, injecting IsPrint
+                      and OutputFormat from the request into the SQL parameters passed
+                      to GetDataForInvBckReport (scoped only to that one report - no
+                      other report's stored procedure call is affected). Required for
+                      GetDataForInvBckReport.sql's compact/portrait layout to trigger.
+****************************************************************************************/
+using Reports.Infrastructure.DTOs;
 using Reports.Infrastructure.Exceptions;
 using Reports.Infrastructure.Logger;
 using Reports.Infrastructure.Models;
@@ -31,6 +41,7 @@ namespace Reports.Infrastructure.Repositories
             try
             {
                 HashSet<string> parametersToRemove = new HashSet<string>();
+                Dictionary<string, object> parametersToAdd = new Dictionary<string, object>();
 
                 if (Enum.TryParse(reportDtl.FunctionName, true, out StoredProcedure storedProcedure))
                 {
@@ -38,14 +49,27 @@ namespace Reports.Infrastructure.Repositories
                     {
                         case StoredProcedure.GetDataForStorageCalcReport:
                             parametersToRemove.Add("VAT");
-                           break;
+                            break;
+
+                        case StoredProcedure.GetDataForInvBckReport:
+                            // The procedure decides its compact/portrait print layout itself
+                            // (column set, truncation, header text) based on these two -
+                            // IsPrint is the active trigger today; OutputFormat is passed
+                            // through too so the trigger can move to it later without any
+                            // C# change (see notes in the stored procedure).
+                            parametersToAdd["IsPrint"] = request.IsPrint;
+                            parametersToAdd["OutputFormat"] = request.OutputFormat;
+                            break;
 
                         default:
                             break;
                     }
                 }
 
-                return request.Parameters.Where(p => !parametersToRemove.Contains(p.Key)).ToDictionary(p => p.Key, p => p.Value);
+                return request.Parameters
+                    .Where(p => !parametersToRemove.Contains(p.Key) && !parametersToAdd.ContainsKey(p.Key))
+                    .Concat(parametersToAdd)
+                    .ToDictionary(p => p.Key, p => p.Value);
             }
             catch (Exception ex)
             {
@@ -83,7 +107,7 @@ namespace Reports.Infrastructure.Repositories
             catch (Exception ex)
             {
                 logger.WriteLog($"Error to Get Data For {reportDtl.ReportID} Report: {ex}");
-                throw new CustomException((int)ErrorMessages.ErrorCodes.DBAccessFailure, $"{ ErrorMessages.Messages[(int)ErrorMessages.ErrorCodes.DBAccessFailure] } : {ex.Message}");
+                throw new CustomException((int)ErrorMessages.ErrorCodes.DBAccessFailure, $"{ErrorMessages.Messages[(int)ErrorMessages.ErrorCodes.DBAccessFailure]} : {ex.Message}");
             }
         }
     }
