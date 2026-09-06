@@ -35,5 +35,10 @@ namespace Reports.Infrastructure.Models
 
         public short? Stat { get; set; }
 
+        // Populated by GetDataForR2470outCollectReport (v2) - shows an alternate title
+        // when DeliveryDate is in the future (planning mode) instead of the normal
+        // report name.
+        public string ReportTitle { get; set; }
+
     }
 }

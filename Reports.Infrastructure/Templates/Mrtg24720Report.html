@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: "Courier New", Courier, monospace;
-            line-height: 1.6;
+            line-height: 1.2;
             margin: 0;
             background-color: #fff;
             direction: rtl;
@@ -30,7 +30,7 @@
         }
 
         .row {
-            margin-bottom: 10px;
+            margin-bottom: 4px;
         }
 
             .row .label {
@@ -49,8 +49,8 @@
         table {
             border-collapse: collapse;
             width: 100%;
-            margin-top: 20px;
-            margin-bottom: 20px;
+            margin-top: 10px;
+            margin-bottom: 10px;
             border-spacing: 15px;
             table-layout: auto;
             min-width: 100%;
@@ -61,7 +61,9 @@
 
         th, td {
             max-width: 200px;
-            padding: 12px;
+            padding: 2px 4px;
+            line-height: 1.1;
+            vertical-align: top;
             text-align: right;
             border-bottom: 1px solid #000;
             word-wrap: break-word;
@@ -81,6 +83,17 @@
         tfoot td, tfoot th {
             max-width: none; 
             white-space: nowrap; 
+        }
+
+        /* Description column ("תאור הטובין", 4th column) only - truncates with an
+           ellipsis at whatever width it actually renders at, so a long value
+           never wraps the row onto a second line. Adjust max-width below if the
+           cutoff point needs to change - no SQL/data change needed either way. */
+        .table table tbody td:nth-child(4) {
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
     </style>
 </head>
@@ -149,8 +162,7 @@
                         <th>כמות</th>
                         <th>תאור הטובין</th>
                         <th>אריזה</th>
-                        <th>פג תוקף</th>
-                        <th>איתור</th>
+                        <th>אסמכתא</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -161,8 +173,7 @@
                         <td>{{EntryLineMoveList_FormattedLineQuantityMove}}</td>
                         <td>{{EntryLineMoveList_LineDesc}}</td>
                         <td>{{EntryLineMoveList_LinePackType}}</td>
-                        <td>{{EntryLineMoveList_ExpiryDate}}</td>
-                        <td>{{EntryLineMoveList_Location}}</td>
+                        <td></td>
                     </tr>
                     {{/EntryLineMoveList}}
                 </tbody>
@@ -173,7 +184,7 @@
                         <td>{{FormattedSumQuantityMove}}</td>
                         <td>נפח: {{Consignment_Volume}} מ"ק</td>
                         <td>משקל: {{SumWeight}} ק"ג</td>
-                        <td colspan="2"></td>
+                        <td></td>
                     </tr>
                 </tfoot>
             </table>

@@ -1,5 +1,5 @@
 ﻿/****************************************************************************************
- FILE VERSION: 6 (2026-07-22)
+ FILE VERSION: 7 (2026-09-06)
 
  Changelog (each entry = one delivered version of this file):
    v1 (2026-07-19) - Added optional OutputFormat field support in ExecuteAsync
@@ -26,6 +26,21 @@
                       removal (now superseded by the stored procedure's own compact/
                       portrait layout, driven by @IsPrint); added portrait-orientation
                       override for the same trigger.
+   v7 (2026-09-06) - GenerateInvBckReport: fixed a regression introduced by v6/the
+                      compact-layout SQL work, causing a live crash (DataRow column-not-
+                      found exception, naming the "declaration" column specifically)
+                      whenever printing with a sort choice of declaration. Root cause: a pre-existing subtotal-by-print-sort
+                      block (not previously reviewed) assumed IsPrint=true always
+                      returns the full column set - true before the compact layout
+                      existed, false afterward. Fixed by: (1) using a compact-layout-
+                      specific column list for the sum/count columns instead of the
+                      full-layout one, since several are renamed or entirely absent in
+                      compact mode; (2) updating the sort-to-group-column mapping to
+                      match GetDataForInvBckReport v5's primary-sort remapping, which
+                      this code had not been updated for; (3) falling back to grouping
+                      by Gush when the sort choice is Declaration, since declaration
+                      data does not exist at all in the compact layout - there is
+                      nothing to group by in that case.
 
  NOTE: the copy Pavel installed (uploaded 2026-07-22 for review) was v3 - three
  versions behind. If you're comparing a deployed copy against this changelog, check
@@ -876,19 +891,33 @@ namespace Reports.Infrastructure.ReportGenerator
 
                     if (request.IsPrint)
                     {
+                        // IsPrint always means the compact/portrait layout is active (see
+                        // GetDataForInvBckReport's @UseCompactLayout), so this whole branch
+                        // must use compact-layout column names, not the full-layout ones
+                        // declared above. Compact drops the "declared quantity" column entirely
+                        // and renames "released quantity" and "authority quantity" to shorter
+                        // headers - see the stored procedure's compact SELECT list for the
+                        // exact current header text used in each mode.
+                        var printColumnsToSum = new List<string> { "טרם התקבל", "יתרה", "שוחרר", "כמות ברשות" };
+
                         int mainSort = request.Parameters.TryGetValue("OrderBy", out var val) && val != null &&
                                        int.TryParse(val.ToString().FirstOrDefault().ToString(), out var result) ? result : 1;
 
+                        // Mapping matches GetDataForInvBckReport v5's primary-sort mapping
+                        // (1=Gush, 2=Declaration, 3=Customer). Option 2 (Declaration) falls
+                        // back to grouping by Gush instead, because the compact layout does
+                        // not carry declaration data at all - there is nothing to group by
+                        // in that case, and Gush is the closest available grouping.
                         var sortColumnMap = new Dictionary<int, string>
                         {
-                            { 1, "שם הלקוח" },
-                            { 2, "גוש" },
-                            { 3, "הצהרה" },
+                            { 1, "גוש" },
+                            { 2, "גוש" },      // declaration not available in compact layout - falls back to grouping by gush
+                            { 3, "שם הלקוח" },
                         };
 
                         string groupColumnName = sortColumnMap[mainSort];
 
-                        InsertTableWithSubtotals(worksheet, dataSet.Tables[0], groupColumnName, columnsToSum, columnsToCount, currentRow);
+                        InsertTableWithSubtotals(worksheet, dataSet.Tables[0], groupColumnName, printColumnsToSum, columnsToCount, currentRow);
                     }
 
                     else
