@@ -1,5 +1,5 @@
 ﻿/****************************************************************************************
- FILE VERSION: 7 (2026-09-06)
+ FILE VERSION: 8 (2026-09-23)
 
  Changelog (each entry = one delivered version of this file):
    v1 (2026-07-19) - Added optional OutputFormat field support in ExecuteAsync
@@ -41,6 +41,13 @@
                       by Gush when the sort choice is Declaration, since declaration
                       data does not exist at all in the compact layout - there is
                       nothing to group by in that case.
+   v8 (2026-09-23) - GenerateSUMdeliveryLines8Report: AdjustToContents() leaves little
+                      to no margin after the text in a column whose content nearly
+                      fills its auto-fit width, which made the usual visual gap between
+                      columns look missing specifically in the picking-order (ligekut)
+                      column, whose values run long. Fixed by adding a small fixed
+                      extra width to every column after AdjustToContents(), restoring a
+                      consistent visual gap after the text in all columns.
 
  NOTE: the copy Pavel installed (uploaded 2026-07-22 for review) was v3 - three
  versions behind. If you're comparing a deployed copy against this changelog, check
@@ -1270,6 +1277,17 @@ namespace Reports.Infrastructure.ReportGenerator
                     ApplyNumberFormatToSheet(worksheet);
 
                     worksheet.Columns().AdjustToContents();
+
+                    // Added (v8): AdjustToContents leaves little/no margin after the text in a
+                    // column whose content nearly fills its auto-fit width (e.g. the long
+                    // values in the ligekut column), making the usual gap between columns look
+                    // missing there specifically. A small fixed extra width on every column
+                    // restores a consistent visual gap after the text, including in the last
+                    // column.
+                    foreach (var column in worksheet.Columns())
+                    {
+                        column.Width += 1.5;
+                    }
 
                     using (var stream = new MemoryStream())
                     {

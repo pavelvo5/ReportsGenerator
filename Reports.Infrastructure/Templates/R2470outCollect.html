@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -86,6 +86,18 @@
             border-top: 1px solid black;
         }
 
+        /* Description column ("תיאור", 6th column) only - truncates with an
+           ellipsis at whatever width it actually renders at, so a long value
+           never wraps the row onto a second line. Adjust max-width below if the
+           cutoff point needs to change - no SQL/data change needed either way. */
+        .table table tbody td:nth-child(6) {
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-left: 2ch;
+        }
+
     </style>
 </head>
 <body>
@@ -114,11 +126,12 @@
             <table>
                 <thead>
                     <tr>
-                        <th>שורה</th>
+                        <th></th>
                         <th>גוש</th>
                         <th>התרה</th>
                         <th>שורת<br>כניסה</th>
                         <th>מספר<br>מזהה</th>
+                        <th>תיאור</th>
                         <th>אריזה</th>
                         <th>כמות<br>למסירה</th>
                     </tr>
@@ -131,6 +144,7 @@
                         <td>{{EntryLineMoveList_DeclarationID}}</td>
                         <td>{{EntryLineMoveList_LineNum}}</td>
                         <td>{{EntryLineMoveList_LineID}}</td>
+                        <td>{{EntryLineMoveList_LineDesc}}</td>
                         <td>{{EntryLineMoveList_LinePackType}}</td>
                         <td>{{EntryLineMoveList_FormattedLineQuantityMove}}</td>
                     </tr>
@@ -138,7 +152,7 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="5"></td>
+                        <td colspan="6"></td>
                         <td>סה"כ:</td>
                         <td>{{SumQuantityMove}}</td>
                     </tr>
