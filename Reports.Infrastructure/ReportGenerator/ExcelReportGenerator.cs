@@ -1,5 +1,5 @@
 ﻿/****************************************************************************************
- FILE VERSION: 8 (2026-09-23)
+ FILE VERSION: 9 (2026-10-13)
 
  Changelog (each entry = one delivered version of this file):
    v1 (2026-07-19) - Added optional OutputFormat field support in ExecuteAsync
@@ -48,6 +48,19 @@
                       column, whose values run long. Fixed by adding a small fixed
                       extra width to every column after AdjustToContents(), restoring a
                       consistent visual gap after the text in all columns.
+   v9 (2026-10-13) - ConvertExcelToPdf: added a timeout and cleanup for the LibreOffice
+                      conversion. Previously the code read the process output with
+                      ReadToEnd() and waited with no time limit, so a LibreOffice process
+                      that hung never returned: the API request waited until the client
+                      timed out ("The underlying connection was closed"), and every hung
+                      attempt left a soffice.exe / soffice.bin pair running on the server.
+                      Now the output is read asynchronously, the wait is limited to
+                      LibreOfficeConversionTimeoutMs (60 seconds), and on timeout the whole
+                      process tree is killed (taskkill /T /F, because soffice.exe spawns
+                      soffice.bin) and a CustomException is thrown, so the caller gets a
+                      clear error and no process is left behind. The temp-file cleanup in
+                      the finally block no longer lets a failed delete hide the real error.
+                      PrintExcelDocument (physical printing) is unchanged.
 
  NOTE: the copy Pavel installed (uploaded 2026-07-22 for review) was v3 - three
  versions behind. If you're comparing a deployed copy against this changelog, check
@@ -81,6 +94,10 @@ namespace Reports.Infrastructure.ReportGenerator
         private readonly IReportRepositoryDapper repositoryDapper;
         private readonly ILogger logger;
         private readonly string libreOffice;
+
+        // Maximum time to wait for a single LibreOffice Excel-to-PDF conversion before the
+        // process tree is killed. A normal conversion takes seconds.
+        private const int LibreOfficeConversionTimeoutMs = 60000;
 
 
         public ExcelReportGenerator(IReportRepositoryAdoNet repositoryAdoNet, IReportRepositoryDapper repositoryDapper, ILogger logger, string libreOffice)
@@ -167,12 +184,36 @@ namespace Reports.Infrastructure.ReportGenerator
 
                 using (Process process = new Process { StartInfo = conversionProcessStartInfo })
                 {
+                    // Output is read asynchronously: a synchronous ReadToEnd() blocks until the
+                    // process exits, which made it impossible to apply a timeout.
+                    var errorBuilder = new StringBuilder();
+                    var outputBuilder = new StringBuilder();
+
+                    process.OutputDataReceived += (sender, e) =>
+                    {
+                        if (e.Data != null) { lock (outputBuilder) { outputBuilder.AppendLine(e.Data); } }
+                    };
+                    process.ErrorDataReceived += (sender, e) =>
+                    {
+                        if (e.Data != null) { lock (errorBuilder) { errorBuilder.AppendLine(e.Data); } }
+                    };
+
                     process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
 
-                    string errorOutput = process.StandardError.ReadToEnd();
-                    string standardOutput = process.StandardOutput.ReadToEnd();
+                    if (!process.WaitForExit(LibreOfficeConversionTimeoutMs))
+                    {
+                        logger.WriteLog($"Excel to PDF conversion timed out after {LibreOfficeConversionTimeoutMs / 1000} seconds. Killing LibreOffice process tree (PID {process.Id}).");
+                        KillProcessTree(process);
+                        throw new CustomException((int)ErrorMessages.ErrorCodes.GlobalError, "Excel to PDF conversion timed out.");
+                    }
 
+                    // Parameterless WaitForExit() makes sure all asynchronous output has been delivered.
                     process.WaitForExit();
+
+                    string errorOutput = errorBuilder.ToString();
+                    string standardOutput = outputBuilder.ToString();
 
                     if (process.ExitCode != 0 || !File.Exists(outputFilePath))
                     {
@@ -208,12 +249,59 @@ namespace Reports.Infrastructure.ReportGenerator
             }
             finally
             {
-                if (File.Exists(inputFilePath))
-                    File.Delete(inputFilePath);
+                // A failed delete (e.g. a file still locked right after a killed conversion)
+                // must not replace the real error that is already propagating.
+                try
+                {
+                    if (File.Exists(inputFilePath))
+                        File.Delete(inputFilePath);
 
-                if (File.Exists(outputFilePath))
-                    File.Delete(outputFilePath);
+                    if (File.Exists(outputFilePath))
+                        File.Delete(outputFilePath);
+                }
+                catch (Exception ex)
+                {
+                    logger.WriteLog($"Failed to delete temporary conversion files: {ex.Message}");
+                }
 
+            }
+        }
+
+        // Kills a process together with all of its child processes. LibreOffice's soffice.exe
+        // starts soffice.bin as a child, so killing only the parent would leave the child running.
+        private void KillProcessTree(Process process)
+        {
+            try
+            {
+                var killInfo = new ProcessStartInfo
+                {
+                    FileName = "taskkill",
+                    Arguments = $"/PID {process.Id} /T /F",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process killProcess = Process.Start(killInfo))
+                {
+                    killProcess.WaitForExit(10000);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.WriteLog($"Failed to kill LibreOffice process tree: {ex.Message}");
+            }
+
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill();
+
+                // Give the OS a moment to release file handles before temp files are deleted.
+                process.WaitForExit(5000);
+            }
+            catch (Exception ex)
+            {
+                logger.WriteLog($"Failed to kill LibreOffice process: {ex.Message}");
             }
         }
 

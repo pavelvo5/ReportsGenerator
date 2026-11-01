@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>בקשה לפעולה מיוחדת</title>
+    <style>
+        body {
+            font-family: "Courier New", Courier, monospace;
+            line-height: 1.2;
+            margin: 0;
+            background-color: #fff;
+            direction: rtl;
+        }
+
+        .container {
+            background: #fff;
+            border: none;
+        }
+
+        .header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 15px;
+            text-decoration: underline;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .row {
+            margin-bottom: 4px;
+        }
+
+            .row .label {
+                display: inline;
+            }
+
+            .row .value {
+                font-weight: bold;
+            }
+
+            .row span {
+                display: inline-block;
+                min-width: auto;
+            }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            border-spacing: 15px;
+            table-layout: auto;
+            min-width: 100%;
+            max-width: 100%;
+            overflow: auto;
+            page-break-inside: avoid;
+        }
+
+        th, td {
+            max-width: 200px;
+            padding: 2px 4px;
+            line-height: 1.1;
+            vertical-align: top;
+            text-align: right;
+            border-bottom: 1px solid #000;
+            word-wrap: break-word;
+            overflow: visible;
+            white-space: normal;
+        }
+
+        th {
+            padding-bottom: 4px;
+            font-weight: normal;
+            vertical-align: bottom;
+        }
+
+        td {
+            font-weight: bold;
+        }
+
+        .two-tables {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            direction: rtl;
+        }
+
+            .two-tables > div {
+                flex: 1 1 48%;
+            }
+
+            .two-tables > div + div {
+                margin-right: 20px;
+            }
+
+        .section-title {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        {{{HeaderHtml}}}
+
+        <div style="height: 14px;"></div>
+
+        {{{TitleHtml}}}
+
+        <div class="row" style="display: flex; width: 100%; box-sizing: border-box; justify-content: space-between; direction: rtl;">
+            <div style="flex: 1 1 50%; min-width: 200px; display: flex;">
+                <span class="label">הצהרת אחסנה:</span>&nbsp;
+                <span class="value">{{Consignment_ConsignmentID}}</span>
+            </div>
+        </div>
+
+        <div class="row" style="display: flex; width: 100%; box-sizing: border-box; justify-content: space-between; direction: rtl;">
+            <div style="flex: 1 1 50%; min-width: 200px; display: flex;">
+                <span class="label">יבואן:</span>&nbsp;
+                <span class="value">{{Consignment_ImporterName}}</span>
+            </div>
+            <div style="flex: 1 1 50%; min-width: 200px; display: flex;">
+                <span class="label">סוכן מכס:</span>&nbsp;
+                <span class="value">{{Consignment_CustomsAgent}}</span>
+            </div>
+        </div>
+
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{Labels_ActivityType}}</th>
+                        <th>{{Labels_Requester}}</th>
+                        <th>{{Labels_Authority}}</th>
+                        <th>{{Labels_DecisionDate}}</th>
+                        <th>{{Labels_CommitTime}}</th>
+                        <th>{{Labels_SampleReturn}}</th>
+                        <th>{{Labels_Remark}}</th>
+                        <th>{{Labels_PerformedBy}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{SpecialAct_ActivityTypeDesc}} ({{SpecialAct_ActivityType}})</td>
+                        <td>{{SpecialAct_RequesterTypeDesc}}</td>
+                        <td>{{SpecialAct_AuthorityDesc}}</td>
+                        <td>{{SpecialAct_FormattedDecision}}</td>
+                        <td>{{SpecialAct_FormattedCommitTime}}</td>
+                        <td>{{SpecialAct_FormattedLatestSampleReturnDate}}</td>
+                        <td>{{SpecialAct_Remark}}</td>
+                        <td>{{SpecialAct_PerformedBy}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        {{#IsRepack}}
+        <div class="two-tables">
+            <div>
+                <div class="section-title">{{Labels_CurrentInventory}}</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{Labels_RowNumber}}</th>
+                            <th>{{Labels_Description}}</th>
+                            <th>{{Labels_CustomsItem}}</th>
+                            <th>{{Labels_Quantity}}</th>
+                            <th>{{Labels_Weight}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#CurrentLineList}}
+                        <tr>
+                            <td>{{CurrentLineList_RowNumber}}</td>
+                            <td>{{CurrentLineList_ReqRowDesc}}</td>
+                            <td>{{CurrentLineList_CustomsItem}}</td>
+                            <td>{{CurrentLineList_FormattedQuantity}}</td>
+                            <td>{{CurrentLineList_FormattedWeight}}</td>
+                        </tr>
+                        {{/CurrentLineList}}
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <div class="section-title">{{Labels_RequiredInventory}}</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{Labels_RowNumber}}</th>
+                            <th>{{Labels_Description}}</th>
+                            <th>{{Labels_CustomsItem}}</th>
+                            <th>{{Labels_Quantity}}</th>
+                            <th>{{Labels_Weight}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#RequiredLineList}}
+                        <tr>
+                            <td>{{RequiredLineList_RowNumber}}</td>
+                            <td>{{RequiredLineList_ReqRowDesc}}</td>
+                            <td>{{RequiredLineList_CustomsItem}}</td>
+                            <td>{{RequiredLineList_FormattedQuantity}}</td>
+                            <td>{{RequiredLineList_FormattedWeight}}</td>
+                        </tr>
+                        {{/RequiredLineList}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {{/IsRepack}}
+
+        {{#IsSample}}
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{Labels_RowNumber}}</th>
+                        <th>{{Labels_Description}}</th>
+                        <th>{{Labels_CustomsItem}}</th>
+                        <th>{{Labels_Quantity}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#CurrentLineList}}
+                    <tr>
+                        <td>{{CurrentLineList_RowNumber}}</td>
+                        <td>{{CurrentLineList_ReqRowDesc}}</td>
+                        <td>{{CurrentLineList_CustomsItem}}</td>
+                        <td>{{CurrentLineList_FormattedQuantity}}</td>
+                    </tr>
+                    {{/CurrentLineList}}
+                </tbody>
+            </table>
+        </div>
+        {{/IsSample}}
+
+        {{#IsOther}}
+        <div class="row">
+            <span class="label">תיאור:</span>&nbsp;
+            <span class="value">{{OtherDescription}}</span>
+        </div>
+        {{/IsOther}}
+
+    </div>
+</body>
+</html>

@@ -1,4 +1,11 @@
-﻿using Reports.Infrastructure.DTOs;
+﻿/****************************************************************************************
+ FILE VERSION: 2 (2026-10-25)
+
+ Changelog:
+   v1 - Baseline as provided.
+   v2 (2026-10-25) - Added GetDataForspecialRequestReport (new report specialRequest).
+****************************************************************************************/
+using Reports.Infrastructure.DTOs;
 using Reports.Infrastructure.Models;
 using System;
 using System.Collections.Generic;
@@ -10,7 +17,7 @@ namespace Reports.Infrastructure.Repositories
 {
     public interface IReportRepositoryDapper
     {
-        Task<dynamic> GetDataAsync(ReportRequest request, ReportDtl reportDtl);        
+        Task<dynamic> GetDataAsync(ReportRequest request, ReportDtl reportDtl);
         Task<Manifest> GetManifestByManifestIDAsync(string manifestID);
         Task<ReportDtl> GetReportsDtlByReportIDAsync(string reportID);
         Task<R912470ReportResponse> GetDataForR912470Report(Dictionary<string, object> parameters, Manifest manifest);
@@ -26,6 +33,7 @@ namespace Reports.Infrastructure.Repositories
         Task<R2470outCollectReportResponse> GetDataForR2470outCollectReport(Dictionary<string, object> parameters, Manifest manifest, ReportDtl reportDtl);
         Task<RCollectPlanningReportResponse> GetDataForRCollectPlanningReport(Dictionary<string, object> parameters, Manifest manifest, ReportDtl reportDtl);
         Task<InvRepForCustomsReportResponse> GetDataForInvRepForCustomsReport(Dictionary<string, object> parameters, Manifest manifest, ReportDtl reportDtl);
+        Task<SpecialRequestReportResponse> GetDataForspecialRequestReport(Dictionary<string, object> parameters, Manifest manifest, ReportDtl reportDtl);
 
 
 

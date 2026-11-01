@@ -1,5 +1,5 @@
 ﻿/****************************************************************************************
- FILE VERSION: 2 (2026-07-23)
+ FILE VERSION: 3 (2026-10-25)
 
  Changelog:
    v1 (2026-07-19) - Added GenerateReleaseGoods10Report to the GenerateExcel enum.
@@ -8,6 +8,8 @@
                       original project zip, dropped somewhere before delivery), which
                       caused a compile error for Pavel. He had already patched it back
                       in locally; this just makes that fix official in the delivered file.
+   v3 (2026-10-25) - Added GetDataForspecialRequestReport to the StoredProcedure enum
+                      (new PDF report specialRequest - בקשה לפעולה מיוחדת).
 ****************************************************************************************/
 using System;
 using System.Collections.Generic;
@@ -60,7 +62,8 @@ namespace Reports.Infrastructure.Models
             GetDataForSerialsIn36Report,
             GetDataForSerialsOut37Report,
             GetDataForDelivery26Report,
-            GetDataForRCollectPlanningReport
+            GetDataForRCollectPlanningReport,
+            GetDataForspecialRequestReport
         }
 
         public enum ReportID

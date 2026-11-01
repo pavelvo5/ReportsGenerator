@@ -283,6 +283,8 @@
     <Compile Include="DTOs\R912470ReportResponse.cs" />
     <Compile Include="DTOs\RCollectPlanningReportResponse.cs" />
     <Compile Include="DTOs\ReportRequest.cs" />
+    <Compile Include="DTOs\SpecialRequestLabels.cs" />
+    <Compile Include="DTOs\SpecialRequestReportResponse.cs" />
     <Compile Include="Exceptions\CustomException.cs" />
     <Compile Include="Exceptions\ErrorMessages.cs" />
     <Compile Include="Exceptions\ErrorResponse.cs" />
@@ -303,6 +305,7 @@
     <Compile Include="Models\Manifest.cs" />
     <Compile Include="Models\ReportDtl.cs" />
     <Compile Include="Models\SpecialAct.cs" />
+    <Compile Include="Models\SpecialActDtl.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReportGenerator\ExcelReportGenerator.cs" />
     <Compile Include="ReportGenerator\IReportGenerator.cs" />
@@ -364,6 +367,7 @@
     <Content Include="Templates\RCollectPlanning.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Templates\specialRequestReport.html" />
     <Content Include="Templates\Title1.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
