@@ -1,4 +1,13 @@
-﻿using Reports.Infrastructure.Models;
+﻿/****************************************************************************************
+ FILE VERSION: 2 (2026-11-03)
+
+ Changelog:
+   v1 - Baseline as provided.
+   v2 (2026-11-03) - DateOpen (the date printed by Title1.html) is now the delivery date
+                      and time, SpecialAct.CommitTime, instead of the print time. Falls
+                      back to the print time when CommitTime is empty.
+****************************************************************************************/
+using Reports.Infrastructure.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +24,8 @@ namespace Reports.Infrastructure.DTOs
 
         public List<EntryLineMoveView> EntryLineMoveList { get; set; }
 
-        public string DateOpen => DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+        // Delivery date and time; print time when CommitTime is empty
+        public string DateOpen => (SpecialAct?.CommitTime ?? DateTime.Now).ToString("dd/MM/yyyy HH:mm");
 
         public ReportDtl ReportDtl { get; set; }
 
