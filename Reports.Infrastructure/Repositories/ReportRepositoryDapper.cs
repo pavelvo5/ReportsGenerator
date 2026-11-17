@@ -1,11 +1,14 @@
 ﻿/****************************************************************************************
- FILE VERSION: 2 (2026-10-25)
+ FILE VERSION: 3 (2026-11-12)
 
  Changelog:
    v1 - Baseline as provided.
    v2 (2026-10-25) - Added the new report specialRequest (בקשה לפעולה מיוחדת): a case in
                       GetDataAsync and the method GetDataForspecialRequestReport
                       (sets VarSequence = RequestID for the shared Title1.html).
+   v3 (2026-11-12) - GetDataForRCollectPlanningReport: the summary row's MissingQuantity
+                      was the surplus (released - required) instead of the shortage.
+                      Now required - released, or 0 when nothing is missing.
 ****************************************************************************************/
 using Dapper;
 using Reports.Infrastructure.DTOs;
@@ -655,7 +658,8 @@ namespace Reports.Infrastructure.Repositories
                                     Quantity = null,
                                     CatalogID = "",
 
-                                    MissingQuantity = ((sumRelease - quantity) >= 0 ? (sumRelease - quantity) : 0),
+                                    // Shortage = required - released; 0 when the released balance covers the order
+                                    MissingQuantity = ((quantity - sumRelease) > 0 ? (quantity - sumRelease) : 0),
                                     ReleaseQuantity = (sumRelease >= 0 ? sumRelease : 0),
                                     Comment = (sumRelease < quantity) ? "*" : "",
 
